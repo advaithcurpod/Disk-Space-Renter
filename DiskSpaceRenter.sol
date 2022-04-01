@@ -146,9 +146,41 @@ contract System {
 
     // releasePayment() is called by provider. it checks the duration and transfers the funds
     // argument is requesters address
-    function releasePayment (address r) public afterCompletion(r) {
+    function releasePayment (address r) public afterCompletion(r) onlyProvider {
         require(providerToRequester[msg.sender].length != 0);
         uint amount = requesterFunds[r]/requesterList[r].duplications;
         payable(msg.sender).transfer(amount);
+        updateMappings(r, msg.sender);
+    }
+
+    function updateMappings(address r, address p) private {
+        // in requester, remove provider
+        address[] memory providerArray = requesterToProvider[r];
+        
+        uint index;
+        for(index=0; index<providerArray.length; index++) {
+            if(requesterToProvider[r][index] == p) {
+                break;
+            }
+        }
+        for(uint j = index; j < providerArray.length-1; j++) {
+            requesterToProvider[r][j] = requesterToProvider[r][j+1];
+        }
+        delete requesterToProvider[r][requesterToProvider[r].length-1];
+
+
+        // in provider remove requester
+        address[] memory requesterArray = providerToRequester[p];
+        
+        uint ind;
+        for(ind=0; ind<requesterArray.length; ind++) {
+            if(providerToRequester[p][ind] == r) {
+                break;
+            }
+        }
+        for(uint j = ind; j <requesterArray.length-1; j++) {
+            providerToRequester[p][j] = providerToRequester[p][j+1];
+        }
+        delete providerToRequester[p][requesterToProvider[p].length-1];
     }
 }
